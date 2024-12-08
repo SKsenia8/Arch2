@@ -13,6 +13,7 @@ import errno
 '''
 
 def start_client(host='127.0.0.1', port=65432):
+    # Функция для запуска клиента
     lock_file = "client_lock.txt"
 
     try:
@@ -23,12 +24,16 @@ def start_client(host='127.0.0.1', port=65432):
         return
 
     try:
+        # Создаем сокет для TCP-соединения
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            # Подключаемся к серверу по указанному адресу и порту
             s.connect((host, port))
 
+            # Получаем адрес клиента
             client_address = s.getsockname()
             client_code = f"{client_address[0]}:{client_address[1]}"
 
+            # Записываем код клиента в файл
             with open('client_code.txt', 'w') as f:
                 f.write(client_code)
 
@@ -36,14 +41,17 @@ def start_client(host='127.0.0.1', port=65432):
 
             while True:
                 try:
+                    # Отправляем сообщение серверу
                     request = "ping"
-                    print(f"Отправка сообщения: {request}")
-                    s.sendall(request.encode())
+                    print(f"Отправка сообщения: {request}") 
+                    s.sendall(request.encode()) 
 
+                    # Получаем ответ от сервера
                     data = s.recv(1024)
                     response = data.decode()
                     print(f"Получен ответ: {response}")
 
+                    # Проверяем, является ли ответ "pong"
                     if response == "pong":
                         print("Успешный обмен сообщениями")
                     else:
@@ -52,22 +60,25 @@ def start_client(host='127.0.0.1', port=65432):
                     time.sleep(1)
                 except IOError as e:
                     if e.errno == errno.EPIPE:
+                        # Если ошибка о потеряне соединения
                         print("На другом конце конвейера нет считывания процесса")
                         break
 
                 except Exception as e:
+                    # Обрабатываем любые другие исключения
                     print(f"Произошла ошибка: {e}")
                     break
 
     finally:
-        # Always release the lock file, even if exceptions occur.
-        os.unlink(lock_file)  #remove the lock file when finished
+        # Удаляем файл блокировки, когда клиент завершает работу
+        os.unlink(lock_file)
         print("Client finished and lock released.")
 
 
 if __name__ == "__main__":
     try:
+        # Вызываем функцию для запуска клиента
         start_client()
-
     except ConnectionRefusedError:
+        # Обрабатываем исключение, если не удалось подключиться к серверу
         print("Невозможно подключиться к серверу")
